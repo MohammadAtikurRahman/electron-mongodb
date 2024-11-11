@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit User</title>
     <style>
-        /* Center the content and apply a soft background */
+        /* Body styling */
         body {
             display: flex;
             flex-direction: column;
@@ -14,55 +14,74 @@
             justify-content: center;
             min-height: 100vh;
             font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
+            background-color: #f8f9fb;
             margin: 0;
             color: #333;
+            overflow: hidden;
         }
 
-        /* Heading style */
+        /* Main container styling */
+        .container {
+            width: 90%; /* Use 90% of the available width */
+            max-width: 600px; /* Restrict maximum width for larger screens */
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        /* Heading styling */
         h1 {
-            color: #4A90E2;
+            color: #2f80ed;
+            font-size: 1.8rem;
             margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         /* Form container styling */
         form {
-            background-color: #ffffff;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 100%;
-            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         /* Label styling */
         label {
-            display: block;
-            font-weight: bold;
-            color: #555;
+            text-align: left;
+            font-weight: 600;
+            color: #444;
+            font-size: 0.9rem;
             margin-bottom: 5px;
         }
 
         /* Input field styling */
         input[type="text"] {
-            width: 100%;
+            width: 96%;
             padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
+            border: 1px solid #d0d4da;
             border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
+            font-size: 0.95rem;
+            background-color: #f9fafb;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="text"]:focus {
+            border-color: #2f80ed;
+            outline: none;
         }
 
         /* Submit button styling */
         button[type="submit"] {
             width: 100%;
             padding: 12px;
-            font-size: 16px;
+            font-size: 1rem;
             font-weight: bold;
             color: #ffffff;
-            background-color: #4A90E2;
+            background-color: #2f80ed;
             border: none;
             border-radius: 4px;
             cursor: pointer;
@@ -70,51 +89,55 @@
         }
 
         button[type="submit"]:hover {
-            background-color: #357ABD;
+            background-color: #276bb3;
         }
 
         /* Data display area styling */
         #dataDisplay {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 100%;
+            text-align: left;
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
         }
 
         #dataDisplay h2 {
-            color: #333;
+            color: #2f80ed;
+            font-size: 1.2rem;
             margin-top: 0;
         }
 
-        #dataDisplay p {
-            font-size: 16px;
-            color: #555;
-            margin: 10px 0;
-            line-height: 1.5;
+        /* Styling for each user entry */
+        .user-entry {
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e6e9ec;
         }
 
-        #dataDisplay hr {
-            border: 0;
-            border-top: 1px solid #eee;
-            margin: 15px 0;
+        .user-entry:last-child {
+            border-bottom: none;
+        }
+
+        .user-entry strong {
+            color: #555;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
-    <h1>Submit User</h1>
-    <form id="userForm">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
-        <label for="address">Address:</label>
-        <input type="text" id="address" name="address" required>
-        <button type="submit">Submit</button>
-    </form>
+    <div class="container">
+        <h1>Submit User</h1>
+        <form id="userForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address" required>
+            <button type="submit">Submit</button>
+        </form>
 
-    <!-- Display area for submitted data -->
-    <div id="dataDisplay">
-        <h2>Submitted Users</h2>
+        <!-- Display area for submitted data -->
+        <div id="dataDisplay">
+            <h2>Submitted Users</h2>
+            <!-- User entries will appear here -->
+        </div>
     </div>
 
     <script src="renderer.js"></script>
