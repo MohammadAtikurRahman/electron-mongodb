@@ -1,48 +1,69 @@
 // src/api/server.js
+
 const express = require('express');
 const portableMongo = require('portable-mongodb');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const User = require('./models/User'); // Import the User model
+const User = require('./models/User');
 
 const app = express();
 const PORT = 3000;
 
 async function main() {
-    // Connect to the embedded MongoDB server with a specified database name
-    await portableMongo.connectToDatabase("portable-mongodb-database");
-    console.log("Connected to the portable MongoDB database.");
+    try {
+        // Start portable MongoDB
+        await portableMongo.connectToDatabase("portable-mongodb-database");
+        console.log("MongoDB connected successfully to database: portable-mongodb-database");
 
-    // Middleware
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: true }));
+        // Connect Mongoose to portable MongoDB after it's fully started
+        await mongoose.connect('mongodb://127.0.0.1:27017/portable-mongodb-database', {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log("Mongoose successfully connected.");
 
-    // Define API Endpoints
-    app.post('/api/users', async (req, res) => {
-        const { name, address } = req.body;
-        try {
-            const newUser = new User({ name, address });
-            await newUser.save();
-            res.status(201).json({ message: 'User added successfully', user: newUser });
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to add user' });
-        }
-    });
+        // Middleware
+        app.use(bodyParser.json());
+        app.use(bodyParser.urlencoded({ extended: true }));
 
-    app.get('/api/users', async (req, res) => {
-        try {
-            const users = await User.find({});
-            res.json(users);
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to retrieve users' });
-        }
-    });
+        // POST endpoint to add a new user
+        app.post('/api/users', async (req, res) => {
+            const { name, address } = req.body;
+            try {
+                if (!name || !address) {
+                    return res.status(400).json({ error: "Name and address are required." });
+                }
+                const newUser = new User({ name, address });
+                await newUser.save();
+                res.status(201).json({ message: 'User added successfully', user: newUser });
+            } catch (error) {
+                console.error('Error adding user:', error);
+                res.status(500).json({ error: 'Failed to add user', details: error.message });
+            }
+        });
 
-    // Start Express server
-    app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
-    });
+        // GET endpoint to retrieve all users
+        app.get('/api/users', async (req, res) => {
+            try {
+                const users = await User.find({});
+                res.json(users);
+            } catch (error) {
+                console.error('Error retrieving users:', error);
+                res.status(500).json({ error: 'Failed to retrieve users', details: error.message });
+            }
+        });
+
+        // Start Express server
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+
+    } catch (error) {
+        console.error('Failed to initialize MongoDB or Mongoose:', error);
+    }
 }
 
 // Run the main function
-main().catch(console.error);
+main().catch(error => {
+    console.error('Unexpected error starting the server:', error);
+});
