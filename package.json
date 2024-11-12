@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "src/main/main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "concurrently \"npm run start-server\" \"electron .\"",
     "start-server": "node src/api/server.js",
     "build": "electron-builder"
   },
@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "A portable Electron app with MongoDB",
   "devDependencies": {
+    "concurrently": "^9.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8"
   },
@@ -28,14 +29,7 @@
       "output": "dist"
     },
     "files": [
-      {
-        "from": "src/",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "node_modules/portable-mongodb",
-        "filter": ["!**/node_modules/**", "!**/*.md"]
-      },
+      "src/**/*",
       "node_modules/**/*"
     ],
     "extraFiles": [
