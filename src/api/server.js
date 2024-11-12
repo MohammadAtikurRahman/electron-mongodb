@@ -1,6 +1,7 @@
 // src/api/server.js
 
 const express = require('express');
+const path = require('path');
 const portableMongo = require('portable-mongodb');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -9,24 +10,37 @@ const User = require('./models/User');
 const app = express();
 const PORT = 3000;
 
-async function main() {
+// Define the paths for MongoDB binaries and data based on the environment
+const mongoDbPath = process.env.NODE_ENV === 'production'
+    ? path.join(process.resourcesPath, 'mongodb-binaries')
+    : path.join(__dirname, '..', 'node_modules', 'portable-mongodb', 'mongodb-binaries');
+
+const mongoDataPath = process.env.NODE_ENV === 'production'
+    ? path.join(process.resourcesPath, 'mongodb-data')
+    : path.join(__dirname, '..', 'node_modules', 'portable-mongodb', 'mongodb-data');
+
+// Initialize and start MongoDB with portableMongo
+(async () => {
     try {
-        // Start portable MongoDB
-        await portableMongo.connectToDatabase("portable-mongodb-database");
-        console.log("MongoDB connected successfully to database: portable-mongodb-database");
-
-        // Connect Mongoose to portable MongoDB after it's fully started
-        await mongoose.connect('mongodb://127.0.0.1:27017/portable-mongodb-database', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+        // Attempt to start MongoDB with portableMongo using the specified binary and data paths
+        await portableMongo.connectToDatabase('portable-mongodb-database', {
+            dbPath: mongoDataPath,
+            binPath: mongoDbPath,
         });
-        console.log("Mongoose successfully connected.");
+        
+        console.log('MongoDB started successfully');
 
-        // Middleware
+        // Connect Mongoose to MongoDB once portableMongo is initialized
+        await mongoose.connect('mongodb://127.0.0.1:27017/electron-app', {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log('Mongoose connected to MongoDB');
+
+        // Middleware for parsing JSON
         app.use(bodyParser.json());
-        app.use(bodyParser.urlencoded({ extended: true }));
 
-        // POST endpoint to add a new user
+        // Define API routes
         app.post('/api/users', async (req, res) => {
             const { name, address } = req.body;
             try {
@@ -42,7 +56,6 @@ async function main() {
             }
         });
 
-        // GET endpoint to retrieve all users
         app.get('/api/users', async (req, res) => {
             try {
                 const users = await User.find({});
@@ -53,17 +66,12 @@ async function main() {
             }
         });
 
-        // Start Express server
+        // Start the Express server
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
         });
 
     } catch (error) {
-        console.error('Failed to initialize MongoDB or Mongoose:', error);
+        console.error('Error starting MongoDB or Mongoose:', error);
     }
-}
-
-// Run the main function
-main().catch(error => {
-    console.error('Unexpected error starting the server:', error);
-});
+})();

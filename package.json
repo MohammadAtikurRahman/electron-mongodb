@@ -10,7 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A portable Electron app with MongoDB",
   "devDependencies": {
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8"
@@ -24,14 +24,30 @@
   "build": {
     "appId": "com.example.myapp",
     "productName": "MyElectronApp",
-    "files": [
-      "src/",
-      "node_modules/",
-      "package.json"
-    ],
     "directories": {
       "output": "dist"
     },
+    "files": [
+      {
+        "from": "src/",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/portable-mongodb",
+        "filter": ["!**/node_modules/**", "!**/*.md"]
+      },
+      "node_modules/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "node_modules/portable-mongodb/mongodb-binaries",
+        "to": "resources/mongodb-binaries"
+      },
+      {
+        "from": "node_modules/portable-mongodb/mongodb-data",
+        "to": "resources/mongodb-data"
+      }
+    ],
     "win": {
       "target": "nsis"
     },
@@ -40,6 +56,7 @@
     },
     "linux": {
       "target": "AppImage"
-    }
+    },
+    "asar": true
   }
 }
