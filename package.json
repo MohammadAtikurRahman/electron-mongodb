@@ -19,7 +19,8 @@
   "dependencies": {
     "electron-log": "^5.0.0",
     "mongoose": "^8.8.1",
-    "portable-mongodb": "^2.1.14"
+    "portable-mongodb": "^2.1.14",
+    "sudo-prompt": "^9.2.1"
   },
   "build": {
     "appId": "com.example.electron.mongodb",
@@ -29,7 +30,10 @@
     },
     "asar": false,
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signingHashAlgorithms": ["sha256"]
+
+      
     },
     "nsis": {
       "oneClick": false,
