@@ -1,64 +1,75 @@
-// Ensure the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const userForm = document.getElementById('userForm');
-    const dataDisplay = document.getElementById('dataDisplay');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const submitButton = userForm.querySelector('button[type="submit"]');
+    const errorDisplay = document.getElementById('errorDisplay'); // Add an error section in HTML
 
     // Submit form event
     userForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevent page reload
+        event.preventDefault();
 
-        // Get form data
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
+        // Clear previous error messages
+        errorDisplay.textContent = '';
+        nameInput.disabled = true;
+        emailInput.disabled = true;
+        submitButton.disabled = true;
+
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
 
         if (!name || !email) {
-            alert('Please fill in both Name and Address fields.');
+            showError('Please fill in all fields.');
+            resetFormState();
             return;
         }
 
         try {
-            // Send data to the backend using the exposed API
             const response = await window.api.addUser({ name, email });
 
-            if (response.error) {
-                alert(`Error: ${response.error}`);
+            if (!response.success) {
+                showError(response.error);
+                resetFormState();
                 return;
             }
 
-            // Clear input fields after successful submission
-            document.getElementById('name').value = '';
-            document.getElementById('email').value = '';
+            // Clear the form
+            nameInput.value = '';
+            emailInput.value = '';
 
-            // Add the new user to the displayed list
-            addUserToDisplay(response);
+            // Add the user to the display
+            addUserToDisplay(response.user);
         } catch (error) {
             console.error('Error submitting user:', error);
-            alert('Failed to submit user.');
+            showError('An unexpected error occurred. Please try again.');
+        } finally {
+            // Re-enable inputs and button after completion
+            resetFormState();
         }
     });
 
-    // Fetch and display users when the app loads
-    async function fetchAndDisplayUsers() {
-        try {
-            const users = await window.api.fetchUsers();
-            users.forEach((user) => addUserToDisplay(user));
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            alert('Failed to fetch users.');
-        }
+    // Function to show error messages
+    function showError(message) {
+        errorDisplay.textContent = message;
+        errorDisplay.style.color = 'red';
     }
 
-    // Add a user to the display
+    // Function to reset the form state
+    function resetFormState() {
+        nameInput.disabled = false;
+        emailInput.disabled = false;
+        submitButton.disabled = false;
+    }
+
+    // Add user to the display
     function addUserToDisplay(user) {
         const userEntry = document.createElement('div');
         userEntry.classList.add('user-entry');
         userEntry.innerHTML = `
             <strong>Name:</strong> ${user.name}<br>
-            <strong>Address:</strong> ${user.email}
+            <strong>Email:</strong> ${user.email}<br>
+            <strong>Created At:</strong> ${new Date(user.createdAt).toLocaleString()}
         `;
-        dataDisplay.appendChild(userEntry);
+        document.getElementById('dataDisplay').appendChild(userEntry);
     }
-
-    // Load users on page load
-    fetchAndDisplayUsers();
 });

@@ -11,18 +11,17 @@ let mainWindow;
 // Function to start Portable MongoDB
 async function startMongoDB() {
     try {
-        // Define a persistent path for MongoDB data
         const mongoDataPath = path.join(app.getPath('userData'), 'mongodb-data');
 
         // Start Portable MongoDB server with persistence
-        await portableMongo.connectToDatabase('electron-mongodb-database', {
+        await portableMongo.connectToDatabase('electron-mongodb-database4', {
             dbPath: mongoDataPath,
         });
         console.log('Portable MongoDB started successfully.');
 
         // Connect Mongoose to MongoDB
         if (mongoose.connection.readyState === 0) {
-            await mongoose.connect('mongodb://127.0.0.1:27017/electron-mongodb-database', {
+            await mongoose.connect('mongodb://127.0.0.1:27017/electron-mongodb-database4', {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
             });
@@ -63,17 +62,36 @@ ipcMain.handle('get-users', async () => {
 
 ipcMain.handle('add-user', async (event, user) => {
     if (!user.name || !user.email) {
-        return { success: false, error: 'Name, email, are required.' };
+        return { success: false, error: 'Name and email are required.' };
     }
+
     try {
-        const newUser = new User(user); // Add a new user
+        // Check for duplicate email
+        const existingUser = await User.findOne({ email: user.email });
+        if (existingUser) {
+            return { success: false, error: 'A user with this email already exists.' };
+        }
+
+        // Add the new user
+        const newUser = new User(user);
         const savedUser = await newUser.save();
-        return { success: true, user: savedUser };
+
+        // Ensure only plain JSON is returned
+        return {
+            success: true,
+            user: {
+                id: savedUser._id.toString(),
+                name: savedUser.name,
+                email: savedUser.email,
+                createdAt: savedUser.createdAt,
+            },
+        };
     } catch (error) {
         console.error('Error adding user:', error);
         return { success: false, error: error.message };
     }
 });
+
 
 // App lifecycle
 app.whenReady().then(async () => {
