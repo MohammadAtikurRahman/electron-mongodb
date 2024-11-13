@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 build/
+setup/
 
 # Portable MongoDB data
 mongodb-data/
