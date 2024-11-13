@@ -1,10 +1,9 @@
 {
   "name": "my-electron-app",
   "version": "1.0.0",
-  "main": "src/main/main.js",
+  "main": "main.js",
   "scripts": {
-    "start": "concurrently \"npm run start-server\" \"electron .\"",
-    "start-server": "node src/api/server.js",
+    "start": "electron .",
     "build": "electron-builder"
   },
   "keywords": [],
