@@ -8,10 +8,27 @@ const User = require('./User'); // MongoDB User model
 let mainWindow;
 const isProduction = process.env.NODE_ENV === 'production';
 const mongoDataPath = isProduction
-    ? path.join(app.getPath('userData'), 'mongodb-data')
-    : path.join(__dirname, 'mongodb-data');
+    ? path.join(app.getPath('userData'), 'mongodb-data') // Production-safe data path
+    : path.join(__dirname, 'mongodb-data'); // Development data path
 
-// Helper to check and connect MongoDB
+// Retry MongoDB startup
+async function retryMongoStart(maxRetries = 3, delayMs = 5000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            await portableMongo.connectToDatabase('electron-mongodb-database', {
+                dbPath: mongoDataPath,
+            });
+            log.info('Portable MongoDB started successfully.');
+            return;
+        } catch (error) {
+            log.error(`MongoDB start attempt ${i + 1} failed:`, error.message);
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+    }
+}
+
+// Retry Mongoose connection
 async function retryMongoConnection(maxRetries = 5, delayMs = 5000) {
     if (mongoose.connection.readyState === 1) {
         log.info('Mongoose is already connected.');
@@ -24,23 +41,34 @@ async function retryMongoConnection(maxRetries = 5, delayMs = 5000) {
             log.info('Mongoose connected to MongoDB.');
             return;
         } catch (error) {
-            log.error(`Attempt ${i + 1} failed:`, error);
+            log.error(`Attempt ${i + 1} failed:`, error.message);
             if (i === maxRetries - 1) throw error;
             await new Promise(resolve => setTimeout(resolve, delayMs));
         }
     }
 }
 
-// Start Portable MongoDB
+// Start Portable MongoDB and Mongoose
 async function startMongoDB() {
+    const fs = require('fs');
+
+    log.info(`MongoDB data path: ${mongoDataPath}`);
+
+    // Ensure the MongoDB data directory exists
+    if (!fs.existsSync(mongoDataPath)) {
+        fs.mkdirSync(mongoDataPath, { recursive: true });
+        log.info('MongoDB data directory created:', mongoDataPath);
+    }
+
+    // Start Portable MongoDB and Mongoose
     try {
-        await portableMongo.connectToDatabase('electron-mongodb-database', {
-            dbPath: mongoDataPath,
-        });
-        log.info(`Portable MongoDB started successfully in ${isProduction ? 'production' : 'development'} mode.`);
+        await retryMongoStart();
         await retryMongoConnection();
     } catch (error) {
-        log.error('Error starting Portable MongoDB or Mongoose:', error);
+        log.error('Error starting Portable MongoDB or Mongoose:', error.message);
+        if (error.message.includes('fassert')) {
+            log.error('MongoDB internal error. Consider cleaning the data directory.');
+        }
     }
 }
 
@@ -79,6 +107,7 @@ ipcMain.handle('add-user', async (event, user) => {
         if (mongoose.connection.readyState !== 1) {
             throw new Error('Database is not connected.');
         }
+
         const existingUser = await User.findOne({ email: user.email }).lean();
         if (existingUser) {
             log.warn(`Duplicate email: ${user.email}`);
@@ -95,7 +124,7 @@ ipcMain.handle('add-user', async (event, user) => {
     }
 });
 
-// App lifecycle
+// App Lifecycle
 app.whenReady().then(async () => {
     log.info('App is starting...');
     await startMongoDB();

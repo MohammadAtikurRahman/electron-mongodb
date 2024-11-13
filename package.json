@@ -5,22 +5,21 @@
   "main": "main.js",
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .",
-    "build": "electron-builder",
-    "package": "electron-builder --dir",
-    "make": "electron-builder --win --x64"
+    "start-prod": "cross-env NODE_ENV=production electron .",
+    "build": "electron-builder"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^33.2.0",
-    "electron-builder": "^25.1.8",
-    "cross-env": "^7.0.3"
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "electron-log": "^5.0.0",
     "mongoose": "^8.8.1",
-    "portable-mongodb": "^2.1.14",
-    "electron-log": "^5.0.0"
+    "portable-mongodb": "^2.1.14"
   },
   "build": {
     "appId": "com.example.electron.mongodb",
