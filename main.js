@@ -8,9 +8,10 @@ const User = require('./User'); // MongoDB User model
 let mainWindow;
 const isProduction = process.env.NODE_ENV === 'production';
 const mongoDataPath = isProduction
-    ? path.join(app.getPath('userData'), 'mongodb-data') // Production data path
-    : path.join(__dirname, 'mongodb-data'); // Development data path
+    ? path.join(app.getPath('userData'), 'mongodb-data')
+    : path.join(__dirname, 'mongodb-data');
 
+// Helper to check and connect MongoDB
 async function retryMongoConnection(maxRetries = 5, delayMs = 5000) {
     if (mongoose.connection.readyState === 1) {
         log.info('Mongoose is already connected.');
@@ -30,17 +31,7 @@ async function retryMongoConnection(maxRetries = 5, delayMs = 5000) {
     }
 }
 
-function waitForMongooseConnection() {
-    return new Promise((resolve, reject) => {
-        if (mongoose.connection.readyState === 1) {
-            resolve();
-        } else {
-            mongoose.connection.once('connected', resolve);
-            mongoose.connection.once('error', reject);
-        }
-    });
-}
-
+// Start Portable MongoDB
 async function startMongoDB() {
     try {
         await portableMongo.connectToDatabase('electron-mongodb-database', {
@@ -53,6 +44,7 @@ async function startMongoDB() {
     }
 }
 
+// Create the Electron main window
 function createMainWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
@@ -67,9 +59,12 @@ function createMainWindow() {
     log.info('Main window created.');
 }
 
+// IPC Handlers for Database Operations
 ipcMain.handle('get-users', async () => {
     try {
-        await waitForMongooseConnection();
+        if (mongoose.connection.readyState !== 1) {
+            throw new Error('Database is not connected.');
+        }
         const users = await User.find().lean();
         log.info('Fetched users successfully.');
         return { success: true, users };
@@ -81,9 +76,12 @@ ipcMain.handle('get-users', async () => {
 
 ipcMain.handle('add-user', async (event, user) => {
     try {
-        await waitForMongooseConnection();
+        if (mongoose.connection.readyState !== 1) {
+            throw new Error('Database is not connected.');
+        }
         const existingUser = await User.findOne({ email: user.email }).lean();
         if (existingUser) {
+            log.warn(`Duplicate email: ${user.email}`);
             return { success: false, error: 'A user with this email already exists.' };
         }
 
@@ -97,6 +95,7 @@ ipcMain.handle('add-user', async (event, user) => {
     }
 });
 
+// App lifecycle
 app.whenReady().then(async () => {
     log.info('App is starting...');
     await startMongoDB();
