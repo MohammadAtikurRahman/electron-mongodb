@@ -2,100 +2,104 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const portableMongo = require('portable-mongodb');
 const mongoose = require('mongoose');
-
-// Import your Mongoose model
-const User = require('./User');
+const log = require('electron-log');
+const User = require('./User'); // MongoDB User model
 
 let mainWindow;
+const isProduction = process.env.NODE_ENV === 'production';
+const mongoDataPath = isProduction
+    ? path.join(app.getPath('userData'), 'mongodb-data') // Production data path
+    : path.join(__dirname, 'mongodb-data'); // Development data path
 
-// Function to start Portable MongoDB
-async function startMongoDB() {
-    try {
-        const mongoDataPath = path.join(app.getPath('userData'), 'mongodb-data');
+async function retryMongoConnection(maxRetries = 5, delayMs = 5000) {
+    if (mongoose.connection.readyState === 1) {
+        log.info('Mongoose is already connected.');
+        return;
+    }
 
-        // Start Portable MongoDB server with persistence
-        await portableMongo.connectToDatabase('electron-mongodb-database4', {
-            dbPath: mongoDataPath,
-        });
-        console.log('Portable MongoDB started successfully.');
-
-        // Connect Mongoose to MongoDB
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect('mongodb://127.0.0.1:27017/electron-mongodb-database4', {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-            });
-            console.log('Mongoose connected to Portable MongoDB.');
-        } else {
-            console.log('Mongoose is already connected.');
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            await mongoose.connect('mongodb://127.0.0.1:27017/electron-mongodb-database');
+            log.info('Mongoose connected to MongoDB.');
+            return;
+        } catch (error) {
+            log.error(`Attempt ${i + 1} failed:`, error);
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delayMs));
         }
-    } catch (error) {
-        console.error('Error starting Portable MongoDB:', error);
     }
 }
 
-// Function to create the Electron window
+function waitForMongooseConnection() {
+    return new Promise((resolve, reject) => {
+        if (mongoose.connection.readyState === 1) {
+            resolve();
+        } else {
+            mongoose.connection.once('connected', resolve);
+            mongoose.connection.once('error', reject);
+        }
+    });
+}
+
+async function startMongoDB() {
+    try {
+        await portableMongo.connectToDatabase('electron-mongodb-database', {
+            dbPath: mongoDataPath,
+        });
+        log.info(`Portable MongoDB started successfully in ${isProduction ? 'production' : 'development'} mode.`);
+        await retryMongoConnection();
+    } catch (error) {
+        log.error('Error starting Portable MongoDB or Mongoose:', error);
+    }
+}
+
 function createMainWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true, // Security measure
+            contextIsolation: true,
         },
     });
 
-    // Load the HTML file for the renderer process
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    log.info('Main window created.');
 }
 
-// Define IPC Handlers for database operations
 ipcMain.handle('get-users', async () => {
     try {
-        const users = await User.find(); // Fetch all users
+        await waitForMongooseConnection();
+        const users = await User.find().lean();
+        log.info('Fetched users successfully.');
         return { success: true, users };
     } catch (error) {
-        console.error('Error fetching users:', error);
+        log.error('Error fetching users:', error);
         return { success: false, error: error.message };
     }
 });
 
 ipcMain.handle('add-user', async (event, user) => {
-    if (!user.name || !user.email) {
-        return { success: false, error: 'Name and email are required.' };
-    }
-
     try {
-        // Check for duplicate email
-        const existingUser = await User.findOne({ email: user.email });
+        await waitForMongooseConnection();
+        const existingUser = await User.findOne({ email: user.email }).lean();
         if (existingUser) {
             return { success: false, error: 'A user with this email already exists.' };
         }
 
-        // Add the new user
         const newUser = new User(user);
         const savedUser = await newUser.save();
-
-        // Ensure only plain JSON is returned
-        return {
-            success: true,
-            user: {
-                id: savedUser._id.toString(),
-                name: savedUser.name,
-                email: savedUser.email,
-                createdAt: savedUser.createdAt,
-            },
-        };
+        log.info('User added successfully:', savedUser.toObject());
+        return { success: true, user: savedUser.toObject() };
     } catch (error) {
-        console.error('Error adding user:', error);
+        log.error('Error adding user:', error);
         return { success: false, error: error.message };
     }
 });
 
-
-// App lifecycle
 app.whenReady().then(async () => {
-    await startMongoDB(); // Start MongoDB when the app is ready
+    log.info('App is starting...');
+    await startMongoDB();
     createMainWindow();
 
     app.on('activate', () => {
@@ -111,14 +115,10 @@ app.on('window-all-closed', () => {
     }
 });
 
-// Clean up MongoDB process on quit
 app.on('quit', async () => {
+    log.info('App is quitting...');
     if (mongoose.connection.readyState !== 0) {
-        try {
-            await mongoose.disconnect();
-            console.log('Mongoose disconnected gracefully.');
-        } catch (error) {
-            console.error('Error during MongoDB disconnect:', error);
-        }
+        await mongoose.disconnect();
+        log.info('Mongoose disconnected.');
     }
 });
