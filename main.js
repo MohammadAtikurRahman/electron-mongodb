@@ -1,7 +1,7 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 const log = require("electron-log");
-const connectToDatabase = require("./portable-mongodb");
+const { connectToDatabase } = require("portable-mongodb"); // Adjust import here
 
 let mainWindow;
 
@@ -13,7 +13,7 @@ async function connectToMongo() {
 
     mainWindow.webContents.send("mongo-connection-status", "MongoDB connected successfully!");
   } catch (err) {
-    log.error("Database not connected:", err.message);
+    log.error("Failed to connect to MongoDB:", err.message);
     mainWindow.webContents.send("mongo-connection-status", `Database not connected: ${err.message}`);
   }
 }
@@ -32,11 +32,11 @@ app.whenReady().then(() => {
 
   mainWindow.loadFile("index.html");
 
-  connectToMongo();
+  connectToMongo().catch((err) => {
+    log.error("Critical error during MongoDB initialization:", err.message);
+  });
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (process.platform !== "darwin") app.quit();
 });

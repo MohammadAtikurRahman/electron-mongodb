@@ -15,8 +15,9 @@
   },
   "dependencies": {
     "electron-log": "^5.2.2",
+    "mongodb-memory-server": "^8.12.2",
     "mongoose": "^8.8.1",
-    "mongodb-memory-server": "^8.12.2"
+    "portable-mongodb": "^2.1.14"
   },
   "build": {
     "asar": true,
@@ -27,6 +28,7 @@
       "main.js",
       "preload.js",
       "index.html",
+      "connection.js",
       "node_modules/**/*"
     ],
     "directories": {
