@@ -1,56 +1,37 @@
 {
-  "name": "my-electron-app",
+  "name": "testing-nodemodulus",
   "version": "1.0.0",
-  "main": "src/main/main.js",
+  "description": "Electron app with portable MongoDB",
+  "main": "main.js",
   "scripts": {
-    "start": "concurrently \"npm run start-server\" \"electron .\"",
-    "start-server": "node src/api/server.js",
+    "start": "electron .",
     "build": "electron-builder"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "A portable Electron app with MongoDB",
+  "author": "Your Name",
+  "license": "MIT",
   "devDependencies": {
-    "concurrently": "^9.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
-    "body-parser": "^1.20.3",
-    "express": "^4.21.1",
-    "mongoose": "^7.8.2",
-    "portable-mongodb": "^2.1.14"
+    "electron-log": "^5.2.2",
+    "mongoose": "^8.8.1",
+    "mongodb-memory-server": "^8.12.2"
   },
   "build": {
-    "appId": "com.example.myapp",
-    "productName": "MyElectronApp",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/mongodb-memory-server/**"
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "node_modules/**/*"
+    ],
     "directories": {
       "output": "dist"
     },
-    "files": [
-      "src/**/*",
-      "node_modules/**/*"
-    ],
-    "extraFiles": [
-      {
-        "from": "node_modules/portable-mongodb/mongodb-binaries",
-        "to": "resources/mongodb-binaries"
-      },
-      {
-        "from": "node_modules/portable-mongodb/mongodb-data",
-        "to": "resources/mongodb-data"
-      }
-    ],
-    "win": {
-      "target": "nsis"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
-    },
-    "asar": true
+    "appId": "com.example.testingnodemodulus"
   }
 }

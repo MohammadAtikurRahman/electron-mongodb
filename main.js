@@ -1,33 +1,42 @@
-// src/main/main.js
+const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const log = require("electron-log");
+const connectToDatabase = require("./portable-mongodb");
 
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
+let mainWindow;
 
-function createWindow() {
-    const mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true,
-            enableRemoteModule: false,
-        },
-    });
+async function connectToMongo() {
+  try {
+    log.info("Starting MongoDB connection process...");
+    await connectToDatabase("portable-mongodb-database");
+    log.info("MongoDB connected successfully to database: portable-mongodb-database");
 
-    // Update this line to point to the actual location of index.html
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    mainWindow.webContents.send("mongo-connection-status", "MongoDB connected successfully!");
+  } catch (err) {
+    log.error("Database not connected:", err.message);
+    mainWindow.webContents.send("mongo-connection-status", `Database not connected: ${err.message}`);
+  }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  log.info("App is ready");
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+    },
+  });
+
+  mainWindow.loadFile("index.html");
+
+  connectToMongo();
 });
 
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
 });
