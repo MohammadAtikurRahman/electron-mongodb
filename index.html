@@ -3,16 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portable MongoDB</title>
+  <title>Portable MongoDB with Electron</title>
 </head>
 <body>
   <h1>Portable MongoDB with Electron</h1>
   <p id="status">Waiting for MongoDB status...</p>
 
   <script>
-    window.electronAPI.onMongoConnectionStatus((event, status) => {
-      document.getElementById("status").innerText = status;
+    const statusElement = document.getElementById("status");
+
+    window.electronAPI.onMongoConnectionStatus((_event, status) => {
+      statusElement.textContent = status;
     });
   </script>
 </body>
 </html>
+

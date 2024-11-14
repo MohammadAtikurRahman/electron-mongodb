@@ -20,15 +20,15 @@
     "portable-mongodb": "^2.1.14"
   },
   "build": {
-    "asar": true,
     "asarUnpack": [
-      "node_modules/mongodb-memory-server/**"
+      "node_modules/portable-mongodb/mongodb-binaries/**"
     ],
     "files": [
       "main.js",
       "preload.js",
       "index.html",
-      "connection.js",
+      "portable-mongo-wrapper.js",
+
       "node_modules/**/*"
     ],
     "directories": {

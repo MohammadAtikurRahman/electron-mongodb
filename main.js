@@ -1,20 +1,20 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 const log = require("electron-log");
-const { connectToDatabase } = require("portable-mongodb"); // Adjust import here
+const { initializeDatabase } = require("./portable-mongo-wrapper"); // Import the wrapper function
 
 let mainWindow;
 
 async function connectToMongo() {
   try {
-    log.info("Starting MongoDB connection process...");
-    await connectToDatabase("portable-mongodb-database");
-    log.info("MongoDB connected successfully to database: portable-mongodb-database");
+    log.info("Connecting to MongoDB...");
+    await initializeDatabase("portable-mongodb-database"); // Use the function from the wrapper
+    log.info("MongoDB connection successful!");
 
     mainWindow.webContents.send("mongo-connection-status", "MongoDB connected successfully!");
-  } catch (err) {
-    log.error("Failed to connect to MongoDB:", err.message);
-    mainWindow.webContents.send("mongo-connection-status", `Database not connected: ${err.message}`);
+  } catch (error) {
+    log.error("MongoDB connection failed:", error.message);
+    mainWindow.webContents.send("mongo-connection-status", `Database not connected: ${error.message}`);
   }
 }
 
